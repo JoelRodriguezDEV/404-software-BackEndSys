@@ -1,0 +1,91 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Member {
+  id        Int       @id @default(autoincrement())
+  name      String
+  email     String?   @unique
+  status    String    @default("ACTIVE")
+  payments  Payment[]
+  
+  // Relación con Room
+  roomId    Int?
+  room      Room?     @relation(fields: [roomId], references: [id], onDelete: SetNull)
+}
+
+model Room {
+  id        Int       @id @default(autoincrement())
+  name      String    @unique
+  capacity  Int       @default(4)
+  members   Member[]
+}
+
+// ============================================================================
+// --- NUEVA LÓGICA DE PRESUPUESTOS Y EVENTOS ---
+// ============================================================================
+
+model Event {
+  id        Int       @id @default(autoincrement())
+  name      String
+  date      DateTime  @default(now())
+  expenses  Expense[]
+}
+
+model Category {
+  id       Int       @id @default(autoincrement())
+  name     String    @unique
+  expenses Expense[]
+}
+
+model Expense {
+  id          Int      @id @default(autoincrement())
+  name        String   // Ej: Sillas, Cervezas, Sonido
+  quantity    Int      @default(1)
+  unitCost    Float    @default(0.0) // Costo por unidad
+  
+  eventId     Int
+  event       Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  
+  categoryId  Int
+  category    Category @relation(fields: [categoryId], references: [id])
+}
+
+// ============================================================================
+// --- FINANZAS, USUARIOS Y AUDITORÍA ---
+// ============================================================================
+
+model Payment {
+  id         Int      @id @default(autoincrement())
+  amount     Float
+  date       DateTime @default(now())
+  // 👇 Opcional para evitar errores si se deja vacío
+  concept    String?
+  // 👇 URL del comprobante en Cloudinary
+  receiptUrl String?
+  
+  memberId   Int
+  member     Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  username  String   @unique
+  password  String   // Contraseña encriptada (Hash)
+  role      String   @default("RECEPTIONIST") // Roles: ADMIN o RECEPTIONIST
+  createdAt DateTime @default(now())
+}
+
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  action    String   // Ejemplo: "LOGIN", "DELETE_PAYMENT"
+  details   String   // Ejemplo: "El usuario admin eliminó el pago #004"
+  user      String   // Quién lo hizo
+  ip        String?  // Desde dónde lo hizo
+  createdAt DateTime @default(now())
+}
