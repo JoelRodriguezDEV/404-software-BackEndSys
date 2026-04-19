@@ -5,9 +5,13 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // Configuración de CORS para conectar con React (Vite)
+  // main.ts
   app.enableCors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    // Permite tanto local como tu nueva URL de Vercel
+    origin: [
+      'http://localhost:5173',
+      'https://budget-manager-404-three.vercel.app',
+    ],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
   });
